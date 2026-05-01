@@ -1,0 +1,39 @@
+{
+  "name": "CI Pipeline",
+  "description": "Simulated CI/CD: lint → (typecheck || test) → build → deploy",
+  "failFast": true,
+  "steps": [
+    {
+      "id": "lint",
+      "plugin": "build-pipeline",
+      "command": "lint",
+      "args": { "files": "42" }
+    },
+    {
+      "id": "typecheck",
+      "plugin": "build-pipeline",
+      "command": "typecheck",
+      "dependsOn": ["lint"]
+    },
+    {
+      "id": "unit-test",
+      "plugin": "build-pipeline",
+      "command": "test",
+      "args": { "suite": "unit" },
+      "dependsOn": ["lint"]
+    },
+    {
+      "id": "build",
+      "plugin": "build-pipeline",
+      "command": "build",
+      "dependsOn": ["typecheck", "unit-test"]
+    },
+    {
+      "id": "deploy-staging",
+      "plugin": "build-pipeline",
+      "command": "deploy",
+      "args": { "env": "staging" },
+      "dependsOn": ["build"]
+    }
+  ]
+}

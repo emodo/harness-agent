@@ -28,63 +28,58 @@ AI 生成 npm 包 → harness install <pkg> → 即刻可用
 
 ## 核心逻辑流
 
-Harness Agent 不是简单的命令分发器。它是一个 **可组合的能力运行时**，支持长链推理和插件间协作：
+Harness Agent 不是简单的命令分发器。它是一个 **可组合的能力运行时**，三层递进：
 
-```
-用户命令
-  │
-  ▼
-┌─────────────────────────────────────────┐
-│              Harness CLI                │
-│  harness run code-review ./src          │
-└──────────────┬──────────────────────────┘
-               │
-               ▼
-┌─────────────────────────────────────────┐
-│           Plugin Engine                 │
-│                                          │
-│  1. 解析 npm 包 → 找到入口 (MCP/SKILL/CLI) │
-│  2. 动态 import() → 注入运行时上下文       │
-│  3. 暴露 ctx.call() 实现跨插件调用         │
-│  4. 生命周期管理：activate ↔ deactivate    │
-└──────────────┬──────────────────────────┘
-               │
-      ┌────────┼────────┐
-      ▼        ▼        ▼
-  ┌──────┐ ┌──────┐ ┌──────┐
-  │Plugin│ │Plugin│ │Plugin│  ← 每个插件是一个 npm 包
-  │  A   │ │  B   │ │  C   │     动态 import()，无编译
-  └──┬───┘ └──┬───┘ └──┬───┘
-     │        │        │
-     └────────┼────────┘
-              │
-              ▼
-     ┌────────────────┐
-     │  链式编排        │
-     │  A.call('B')     │  ← 长链推理
-     │  B.call('C')     │     多 Agent 协作
-     │  C 返回结果给 A   │
-     └────────────────┘
+| 层级 | 能力 | 状态 |
+|------|------|------|
+| **L1 单插件** | `harness run <plugin> <cmd>` — 独立 CLI 命令 | ✅ |
+| **L2 插件间调用** | `ctx.call()` / `ctx.use()` / `ctx.plugins` — 插件互相调用 | ✅ |
+| **L3 编排引擎** | `harness pipeline <workflow.json>` — DAG 拓扑排序 + 并行执行 | ✅ |
+
+### L2 示例：插件间调用
+
+```js
+// plugin A 的命令中调用 plugin B
+handler: async (ctx) => {
+  // 调用另一个插件的命令
+  const result = await ctx.call('build-pipeline', 'lint', { files: '42' });
+  console.log(result.success); // true
+
+  // 直接导入另一个插件的模块
+  const other = await ctx.use('hello-world');
+  console.log(other.meta.description);
+
+  // 发现所有已安装的插件
+  console.log(ctx.plugins); // ['hello-world', 'build-pipeline', ...]
+}
 ```
 
-**三层能力递进**：
+### L3 示例：DAG 工作流
 
-| 层级 | 能力 | 实现方式 |
-|------|------|---------|
-| **L1 单插件** | 独立 CLI 命令 | `harness run <plugin> <cmd>` |
-| **L2 插件间调用** | Skill 被其他 Skill 复用 | `ctx.call('other-plugin', { ... })` |
-| **L3 编排引擎** | 有向无环图推理链 | Orchestrator 插件 → 调度多个子插件 |
+```json
+{
+  "name": "CI Pipeline",
+  "steps": [
+    { "id": "lint",      "plugin": "build-pipeline", "command": "lint" },
+    { "id": "typecheck", "plugin": "build-pipeline", "command": "typecheck", "dependsOn": ["lint"] },
+    { "id": "test",      "plugin": "build-pipeline", "command": "test",      "dependsOn": ["lint"] },
+    { "id": "build",     "plugin": "build-pipeline", "command": "build",     "dependsOn": ["typecheck", "test"] },
+    { "id": "deploy",    "plugin": "build-pipeline", "command": "deploy",    "dependsOn": ["build"] }
+  ]
+}
+```
 
-一个典型的 L3 编排场景：
+```bash
+harness pipeline workflows/ci.json
+```
+
+执行时自动拓扑排序，同级步骤并行执行：
 
 ```
-harness run orchestrator review-and-deploy
-  │
-  ├─► code-review (L1)     → 审查代码
-  ├─► type-check (L1)      → 类型检查
-  ├─► test-runner (L1)     → 跑测试
-  └─► deploy (L1)          → 如果上面全绿：部署
-       └─► notify (L2)     → 通知飞书/微信
+── Level 1 ──        lint                  (串行)
+── Level 2 ──        typecheck ∥ test      (并行！)
+── Level 3 ──        build                 (串行)
+── Level 4 ──        deploy                (串行)
 ```
 
 ---
@@ -149,12 +144,17 @@ That's it. No harness-specific dependencies required.
 harness-agent/
 ├── bin/harness.js        ← CLI entry shim
 ├── src/
-│   ├── cli.ts            ← Commander CLI (install/list/run/remove)
-│   ├── engine.ts         ← Plugin loader — dynamic import() + lifecycle
-│   ├── protocol.ts       ← HarnessPlugin interface definition
-│   └── registry.ts       ← JSON-based plugin registry (~/.harness/)
+│   ├── cli.ts            ← Commander CLI (install/list/run/remove/pipeline)
+│   ├── engine.ts         ← Plugin loader — dynamic import() + L2 ctx.call/use
+│   ├── protocol.ts       ← HarnessPlugin, WorkflowDef types
+│   ├── registry.ts       ← JSON-based plugin registry (~/.harness/)
+│   └── orchestrator.ts   ← L3 DAG engine — topological sort + parallel exec
 ├── plugins/
-│   └── hello-world/      ← Example plugin (npm package structure)
+│   ├── hello-world/      ← Example plugin (L1)
+│   ├── build-pipeline/   ← CI simulator plugin (L2/L3)
+│   └── pipe-demo/        ← Cross-plugin calling demo (L2)
+├── workflows/
+│   └── ci.json           ← L3 DAG workflow example
 ├── package.json
 └── tsconfig.json
 ```

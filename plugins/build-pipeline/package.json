@@ -1,0 +1,8 @@
+{
+  "name": "harness-plugin-build",
+  "version": "1.0.0",
+  "description": "Simulated CI build pipeline plugin for Harness Agent",
+  "type": "module",
+  "main": "./index.js",
+  "license": "MIT"
+}

@@ -2,18 +2,15 @@
 /**
  * Harness Agent CLI — Pluggable AI Tool Base
  *
- * Commands:
- *   harness install <npm-package>   Install a plugin from npm
- *   harness list                    List installed plugins
- *   harness remove <plugin>         Remove a plugin
- *   harness run <plugin> [cmd]      Run a plugin command
+ * L1: harness install/list/run/remove
+ * L2: ctx.call() / ctx.use() cross-plugin calling
+ * L3: harness pipeline <workflow.json> DAG orchestration
  */
 
 import { Command } from 'commander';
 import { execSync } from 'node:child_process';
 import { existsSync, rmSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
-import { pathToFileURL } from 'node:url';
+import { join, resolve } from 'node:path';
 import {
   loadRegistry,
   addPlugin,
@@ -28,6 +25,8 @@ import {
   getPluginCommands,
   executeCommand,
 } from './engine.js';
+import { runWorkflow } from './orchestrator.js';
+import type { WorkflowDef } from './protocol.js';
 
 const program = new Command();
 
@@ -228,6 +227,42 @@ program
     }
 
     await executeCommand(pluginName, commandName, args, process.argv);
+  });
+
+// ---- pipeline (L3) ----
+program
+  .command('pipeline <workflowFile>')
+  .description('Run a DAG workflow of plugin commands')
+  .option('--no-fail-fast', 'Continue on error')
+  .action(async (workflowFile: string, options: { failFast?: boolean }) => {
+    const wfPath = resolve(workflowFile);
+    if (!existsSync(wfPath)) {
+      console.error(`✗ Workflow file not found: ${wfPath}`);
+      process.exit(1);
+    }
+
+    let wf: WorkflowDef;
+    try {
+      wf = JSON.parse(readFileSync(wfPath, 'utf-8')) as WorkflowDef;
+    } catch (err: any) {
+      console.error(`✗ Failed to parse workflow JSON: ${err.message}`);
+      process.exit(1);
+    }
+
+    if (!wf.name || !wf.steps || wf.steps.length === 0) {
+      console.error('✗ Workflow must have a "name" and non-empty "steps" array');
+      process.exit(1);
+    }
+
+    if (options.failFast === false) {
+      wf.failFast = false;
+    }
+
+    const result = await runWorkflow(wf);
+
+    if (!result.success) {
+      process.exit(1);
+    }
   });
 
 program.parse();

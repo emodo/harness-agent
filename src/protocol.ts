@@ -3,6 +3,10 @@
  *
  * Any npm package that exports a `HarnessPlugin` object
  * can be used as a harness-agent plugin.
+ *
+ * L1: Standalone CLI commands
+ * L2: Cross-plugin calling via ctx.call() / ctx.use()
+ * L3: Orchestrator DAG pipelines via harness pipeline
  */
 
 export interface PluginMeta {
@@ -16,34 +20,11 @@ export interface PluginMeta {
   engines?: { node?: string };
 }
 
-export interface CommandDef {
-  /** Command name (subcommand of `harness <plugin> <name>`) */
-  name: string;
-  /** Description shown in help */
-  description?: string;
-  /** CLI arguments definition */
-  args?: ArgumentDef[];
-  /** Handler function */
-  handler: (ctx: CommandContext) => Promise<void>;
-}
-
 export interface ArgumentDef {
   name: string;
   description?: string;
   required?: boolean;
-  /** Default value */
   default?: string;
-}
-
-export interface CommandContext {
-  /** Parsed arguments key-value */
-  args: Record<string, string>;
-  /** Raw process.argv for this invocation */
-  rawArgs: string[];
-  /** Plugin workspace directory */
-  workspace: string;
-  /** Logger bound to this plugin */
-  logger: PluginLogger;
 }
 
 export interface PluginLogger {
@@ -53,35 +34,115 @@ export interface PluginLogger {
   debug: (...args: unknown[]) => void;
 }
 
-export interface PluginContext {
-  /** Plugin's own install directory */
-  pluginDir: string;
-  /** Global harness workspace */
-  workspace: string;
-  /** Logger */
-  logger: PluginLogger;
+// ── L2: Cross-plugin calling ──
+
+/** Result returned from ctx.call() */
+export interface CallResult {
+  success: boolean;
+  data?: unknown;
+  error?: string;
 }
 
-/**
- * The main interface every harness plugin must export.
- */
+/** Runtime context injected into every command handler */
+export interface CommandContext {
+  args: Record<string, string>;
+  rawArgs: string[];
+  workspace: string;
+  logger: PluginLogger;
+
+  /**
+   * L2: Call another plugin's command.
+   * @example await ctx.call('pdf-parser', 'extract', { path: './doc.pdf' })
+   */
+  call: (pluginName: string, commandName: string, args: Record<string, string>) => Promise<CallResult>;
+
+  /**
+   * L2: Dynamically import another plugin's entire module.
+   * @example const pdf = await ctx.use<HarnessPlugin>('pdf-parser')
+   */
+  use: <T = unknown>(pluginName: string) => Promise<T | null>;
+
+  /** L2: List of all installed plugin names */
+  plugins: string[];
+}
+
+export interface PluginContext {
+  pluginDir: string;
+  workspace: string;
+  logger: PluginLogger;
+
+  call: (pluginName: string, commandName: string, args: Record<string, string>) => Promise<CallResult>;
+  use: <T = unknown>(pluginName: string) => Promise<T | null>;
+  plugins: string[];
+}
+
+// ── Plugin Command ──
+
+export interface CommandDef {
+  name: string;
+  description?: string;
+  args?: ArgumentDef[];
+  handler: (ctx: CommandContext) => Promise<void>;
+}
+
+// ── Main Plugin Interface ──
+
 export interface HarnessPlugin {
-  /** Plugin metadata */
   meta: PluginMeta;
-
-  /** CLI commands exposed by this plugin */
   commands?: CommandDef[];
-
-  /** Called when plugin is activated (installed / loaded) */
   onActivate?: (ctx: PluginContext) => Promise<void>;
-
-  /** Called when plugin is deactivated (removed) */
   onDeactivate?: () => Promise<void>;
 }
 
-/**
- * Type guard to check if an imported module is a valid plugin.
- */
+// ── L3: Orchestrator types ──
+
+export interface WorkflowStep {
+  /** Unique step identifier within this workflow */
+  id: string;
+  /** Plugin name to invoke */
+  plugin: string;
+  /** Command to run on that plugin */
+  command: string;
+  /** Arguments for the command */
+  args?: Record<string, string>;
+  /** Step IDs this step depends on (must complete first) */
+  dependsOn?: string[];
+}
+
+export interface WorkflowDef {
+  /** Workflow name */
+  name: string;
+  /** Human-readable description */
+  description?: string;
+  /** Steps to execute */
+  steps: WorkflowStep[];
+  /** If true, stop on first failure (default: true) */
+  failFast?: boolean;
+}
+
+export interface StepResult {
+  id: string;
+  plugin: string;
+  command: string;
+  success: boolean;
+  data?: unknown;
+  error?: string;
+  durationMs: number;
+}
+
+export interface WorkflowResult {
+  name: string;
+  success: boolean;
+  totalSteps: number;
+  passed: number;
+  failed: number;
+  skipped: number;
+  durationMs: number;
+  steps: StepResult[];
+}
+
+// ── Type guards ──
+
 export function isHarnessPlugin(obj: unknown): obj is HarnessPlugin {
   if (!obj || typeof obj !== 'object') return false;
   const p = obj as Record<string, unknown>;

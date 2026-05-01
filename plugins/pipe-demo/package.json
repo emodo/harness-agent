@@ -1,0 +1,8 @@
+{
+  "name": "harness-plugin-orchestrator-demo",
+  "version": "1.0.0",
+  "description": "L2 cross-plugin calling demo — chains calls to other plugins",
+  "type": "module",
+  "main": "./index.js",
+  "license": "MIT"
+}
