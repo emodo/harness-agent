@@ -1,0 +1,8 @@
+{
+  "name": "harness-plugin-hello",
+  "version": "1.0.0",
+  "description": "Example harness plugin — prints hello",
+  "type": "module",
+  "main": "./index.js",
+  "license": "MIT"
+}
