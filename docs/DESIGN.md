@@ -38,37 +38,88 @@ AI → 自然语言 → 自动拆解步骤 → 执行 Pipeline
 
 ## 二、核心架构
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    Developer / AI Agent                       │
-│              CLI · Natural Language · MCP Client              │
-└──────────────────────────┬──────────────────────────────────┘
-                           │
-┌──────────────────────────▼──────────────────────────────────┐
-│                    ⚡ CLI Base · Harness Core                  │
-│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────────┐   │
-│  │CLI Entry │ │  Plugin  │ │ Registry │ │ Orchestrator │   │
-│  │Commander │ │ Engine   │ │  ~/.hrn  │ │ DAG TopoSort │   │
-│  └──────────┘ └──────────┘ └──────────┘ └──────────────┘   │
-│  ┌──────────┐ ┌──────────┐                                  │
-│  │ Secrets  │ │ Sandbox  │                                  │
-│  │ Manager  │ │ + Audit  │                                  │
-│  └──────────┘ └──────────┘                                  │
-└──────────────────────────┬──────────────────────────────────┘
-                           │ HarnessPlugin Protocol
-┌──────────────────────────▼──────────────────────────────────┐
-│                    📦 Plugin Ecosystem                        │
-│  @team/deploy  @team/monitor  @team/config  @team/ticket    │
-│  @team/log     @team/acl      @team/im       ...             │
-└──────────────────────────┬──────────────────────────────────┘
-                           │
-┌──────────────────────────▼──────────────────────────────────┐
-│               🏭 Enterprise Systems                           │
-│  Jenkins  Prometheus  Apollo  ELK  Jira  LDAP  ...          │
-└─────────────────────────────────────────────────────────────┘
+```mermaid
+graph TB
+    subgraph User["👤 用户层"]
+        DEV["Developer<br/>CLI · AI · MCP Client"]
+        PLAT["Platform Consumer<br/>Web UI · ChatOps · API"]
+    end
+
+    subgraph Core["⚡ CLI Base · Harness Core"]
+        CLI["CLI Entry<br/>Commander.js"]
+        ENG["Plugin Engine<br/>dynamic import()"]
+        REG["Registry<br/>~/.harness/"]
+        ORC["Orchestrator<br/>DAG TopoSort"]
+        SEC["Secrets Manager<br/>ctx.secrets"]
+        SBX["Sandbox<br/>Permissions + Audit"]
+        CLI --> ENG
+        ENG --> REG
+        ORC --> ENG
+    end
+
+    subgraph Proto["🔌 HarnessPlugin Protocol"]
+        PTC["meta · commands · onActivate<br/>auth · audit · retry · timeout<br/>args{type,validate} · output{JSONSchema}"]
+    end
+
+    subgraph Plugins["📦 Plugin Ecosystem"]
+        DEP["@team/deploy<br/>发布系统"]
+        MON["@team/monitor<br/>监控告警"]
+        CFG["@team/config<br/>配置中心"]
+        TKT["@team/ticket<br/>工单系统"]
+        LOG["@team/log<br/>日志平台"]
+        ACL["@team/acl<br/>权限系统"]
+        IM["@team/im<br/>IM 通知"]
+    end
+
+    subgraph EntSys["🏭 Enterprise Systems"]
+        JEN["Jenkins / CI"]
+        PROM["Prometheus"]
+        APO["Apollo / Nacos"]
+        ELK["ELK / Loki"]
+        JIRA["Jira / 飞书审批"]
+        LDAP["LDAP / OAuth"]
+    end
+
+    subgraph AI["🤖 AI Native Layer"]
+        NL["Natural Language<br/>harness ask '...'"]
+        AIGEN["AI Plugin Generator<br/>harness create --ai"]
+        HEAL["Self-Healing<br/>Auto Retry + Fix"]
+        MCP["MCP Server<br/>harness serve<br/>→ Claude/Cursor/Windsurf"]
+    end
+
+    subgraph Exp["🌐 Exposure Layer"]
+        REST["OpenAPI / REST<br/>commands → API"]
+        FC["Function Calling<br/>LLM → Plugin"]
+    end
+
+    subgraph FE["🎨 大前端竞争力"]
+        D2C["Design → Code"]
+        PERF["Perf Audit"]
+        VIS["Visual Diff"]
+        AIREV["AI Review"]
+        MFE["Micro-Frontend"]
+    end
+
+    DEV --> CLI
+    PLAT --> CLI
+    Core --> Proto
+    Proto --> Plugins
+    Plugins --> EntSys
+    Core -.-> AI
+    Core -.-> Exp
+    Core -.-> FE
+
+    style User fill:#1e293b,stroke:#94a3b8,color:#fff
+    style Core fill:#083344,stroke:#22d3ee,color:#fff
+    style Proto fill:#064e3b,stroke:#34d399,color:#fff
+    style Plugins fill:#4c1d95,stroke:#a78bfa,color:#fff
+    style EntSys fill:#78350f,stroke:#fbbf24,color:#fff
+    style AI fill:#881337,stroke:#fb7185,color:#fff
+    style Exp fill:#064e3b,stroke:#34d399,color:#fff
+    style FE fill:#083344,stroke:#22d3ee,color:#fff
 ```
 
-完整架构图见 [architecture.html](./architecture.html)。
+> 💡 暗色主题交互式 SVG 版本：用浏览器打开 [architecture.html](./architecture.html)
 
 ### 2.1 层次说明
 
@@ -79,6 +130,44 @@ AI → 自然语言 → 自动拆解步骤 → 执行 Pipeline
 | **协议层** | 标准化插件接口，任何 npm 包实现协议即可接入 | HarnessPlugin interface |
 | **业务插件层** | 对接各个内部系统的适配器，一个系统一个 npm 包 | deploy, monitor, config, ticket, log, acl, im |
 | **基础设施层** | 公司现有的底层系统 | Jenkins, Prometheus, Apollo, ELK, Jira, LDAP |
+
+### 2.2 Pipeline 企业联动示例
+
+一次 `harness pipeline emergency-rollback.yaml`，5 个系统自动编排：
+
+```mermaid
+sequenceDiagram
+    participant OPS as 👤 运维
+    participant CLI as CLI
+    participant MON as @team/monitor
+    participant TKT as @team/ticket
+    participant DEP as @team/deploy
+    participant IM as @team/im
+
+    OPS->>CLI: harness pipeline rollback.yaml
+
+    Note over CLI: Level 1
+    CLI->>MON: silence-alert (service=gateway, 30m)
+    MON-->>CLI: ✓ 告警已静默
+
+    Note over CLI: Level 2
+    CLI->>TKT: create (P0 回滚工单)
+    TKT-->>CLI: ✓ INC-2026-0042
+
+    Note over CLI: Level 3 (dependsOn: silence ✓)
+    CLI->>DEP: rollback (service=gateway, v2.3.0)
+    DEP-->>CLI: ✓ 回滚完成 (12s)
+
+    Note over CLI: Level 4 (dependsOn: rollback ✓)
+    CLI->>MON: health-check (service=gateway)
+    MON-->>CLI: ✓ 200 OK (latency 45ms)
+
+    Note over CLI: Level 5 (dependsOn: health ✓)
+    CLI->>IM: send (#ops, "gateway 已回滚 v2.3.0")
+    IM-->>CLI: ✓ 已通知
+
+    CLI-->>OPS: ⚡ 回滚完成 (5 步骤, 18s)
+```
 
 ---
 
@@ -159,6 +248,49 @@ steps:
 - 同级步骤并行执行
 - fail-fast / continue-on-error 模式
 - 执行计时和结果汇总
+
+```mermaid
+sequenceDiagram
+    participant U as 👤 User
+    participant CLI as CLI Entry
+    participant ORC as Orchestrator
+    participant ENG as Plugin Engine
+    participant P1 as Plugin A (lint)
+    participant P2 as Plugin B (test)
+    participant P3 as Plugin C (build)
+
+    U->>CLI: harness pipeline ci.yaml
+    CLI->>ORC: runWorkflow(ci.yaml)
+    ORC->>ORC: validate + topologicalSort
+
+    Note over ORC: Level 1
+    ORC->>ENG: execute(lint)
+    ENG->>P1: import + handler(ctx)
+    P1-->>ENG: ✓ success (342ms)
+    ENG-->>ORC: StepResult{lint: ok}
+
+    Note over ORC: Level 2 (dependsOn: lint ✓)
+    par Parallel
+        ORC->>ENG: execute(typecheck)
+        ENG->>P2: import + handler(ctx)
+        P2-->>ENG: ✓ success (2.1s)
+        ENG-->>ORC: StepResult{typecheck: ok}
+    and
+        ORC->>ENG: execute(test)
+        ENG->>P3: import + handler(ctx)
+        P3-->>ENG: ✓ success (1.2s)
+        ENG-->>ORC: StepResult{test: ok}
+    end
+
+    Note over ORC: Level 3 (dependsOn: typecheck + test ✓)
+    ORC->>ENG: execute(build)
+    ENG->>P3: import + handler(ctx)
+    P3-->>ENG: ✓ success (5.0s)
+    ENG-->>ORC: StepResult{build: ok}
+
+    ORC-->>CLI: WorkflowResult{3 passed, 0 failed}
+    CLI-->>U: ⚡ Pipeline complete (8.6s)
+```
 
 #### P0-5 插件脚手架 `harness create`
 
