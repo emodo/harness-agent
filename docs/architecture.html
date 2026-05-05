@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Harness Agent — 企业级 CLI 基座架构</title>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'JetBrains Mono', monospace;
+      background: #020617;
+      min-height: 100vh;
+      padding: 2rem;
+      color: white;
+    }
+    .container { max-width: 1300px; margin: 0 auto; }
+    .header { margin-bottom: 2rem; }
+    .header-row { display: flex; align-items: center; gap: 1rem; margin-bottom: 0.5rem; }
+    .pulse-dot { width: 12px; height: 12px; background: #22d3ee; border-radius: 50%; animation: pulse 2s infinite; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+    h1 { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.025em; }
+    .subtitle { color: #94a3b8; font-size: 0.875rem; margin-left: 1.75rem; }
+    .diagram-container {
+      background: rgba(15, 23, 42, 0.5);
+      border-radius: 1rem;
+      border: 1px solid #1e293b;
+      padding: 1.5rem;
+      overflow-x: auto;
+    }
+    svg { width: 100%; min-width: 1100px; display: block; }
+    .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; margin-top: 2rem; }
+    .card { background: rgba(15, 23, 42, 0.5); border-radius: 0.75rem; border: 1px solid #1e293b; padding: 1.25rem; }
+    .card-header { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem; }
+    .card-dot { width: 8px; height: 8px; border-radius: 50%; }
+    .card-dot.cyan { background: #22d3ee; }
+    .card-dot.emerald { background: #34d399; }
+    .card-dot.violet { background: #a78bfa; }
+    .card-dot.amber { background: #fbbf24; }
+    .card-dot.rose { background: #fb7185; }
+    .card h3 { font-size: 0.875rem; font-weight: 600; }
+    .card ul { list-style: none; color: #94a3b8; font-size: 0.75rem; }
+    .card li { margin-bottom: 0.375rem; }
+    .footer { text-align: center; margin-top: 1.5rem; color: #475569; font-size: 0.75rem; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="header-row">
+        <div class="pulse-dot"></div>
+        <h1>Harness Agent — 企业级 CLI 基座</h1>
+      </div>
+      <p class="subtitle">Plugin Protocol · Pipeline Orchestrator · AI Native · Enterprise Integration</p>
+    </div>
+
+    <div class="diagram-container">
+      <svg viewBox="0 0 1200 920">
+        <defs>
+          <marker id="arrow" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#64748b" />
+          </marker>
+          <marker id="arrow-cyan" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#22d3ee" />
+          </marker>
+          <marker id="arrow-green" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#34d399" />
+          </marker>
+          <marker id="arrow-violet" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#a78bfa" />
+          </marker>
+          <marker id="arrow-amber" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#fbbf24" />
+          </marker>
+          <marker id="arrow-rose" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#fb7185" />
+          </marker>
+          <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+            <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1e293b" stroke-width="0.5"/>
+          </pattern>
+        </defs>
+
+        <rect width="100%" height="100%" fill="url(#grid)" />
+
+        <!-- ================================================================
+             USER LAYER (Top)
+             ================================================================ -->
+        <rect x="300" y="24" width="260" height="48" rx="6" fill="rgba(30, 41, 59, 0.5)" stroke="#94a3b8" stroke-width="1.5"/>
+        <text x="430" y="43" fill="white" font-size="11" font-weight="600" text-anchor="middle">👤 Developer / AI Agent</text>
+        <text x="430" y="58" fill="#94a3b8" font-size="9" text-anchor="middle">CLI · Natural Language · MCP Client</text>
+
+        <rect x="650" y="24" width="260" height="48" rx="6" fill="rgba(30, 41, 59, 0.5)" stroke="#94a3b8" stroke-width="1.5"/>
+        <text x="780" y="43" fill="white" font-size="11" font-weight="600" text-anchor="middle">📊 Platform Consumer</text>
+        <text x="780" y="58" fill="#94a3b8" font-size="9" text-anchor="middle">Web UI · ChatOps · API · SDK</text>
+
+        <!-- ================================================================
+             CLI BASE — Core Engine
+             ================================================================ -->
+        <line x1="430" y1="72" x2="430" y2="96" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrow)"/>
+        <line x1="780" y1="72" x2="780" y2="96" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+        <rect x="180" y="96" width="520" height="220" rx="12" fill="rgba(8, 51, 68, 0.12)" stroke="#22d3ee" stroke-width="2" stroke-dasharray="8,4"/>
+        <text x="192" y="115" fill="#22d3ee" font-size="10" font-weight="600">⚡ CLI Base · Harness Core</text>
+
+        <!-- CLI Entry -->
+        <rect x="210" y="126" width="180" height="50" rx="6" fill="rgba(8, 51, 68, 0.4)" stroke="#22d3ee" stroke-width="1.5"/>
+        <text x="300" y="147" fill="white" font-size="11" font-weight="600" text-anchor="middle">CLI Entry</text>
+        <text x="300" y="163" fill="#94a3b8" font-size="9" text-anchor="middle">Commander.js</text>
+
+        <!-- Plugin Engine -->
+        <rect x="410" y="126" width="180" height="50" rx="6" fill="rgba(8, 51, 68, 0.4)" stroke="#22d3ee" stroke-width="1.5"/>
+        <text x="500" y="147" fill="white" font-size="11" font-weight="600" text-anchor="middle">Plugin Engine</text>
+        <text x="500" y="163" fill="#94a3b8" font-size="9" text-anchor="middle">dynamic import()</text>
+
+        <!-- Registry -->
+        <rect x="210" y="188" width="180" height="50" rx="6" fill="rgba(8, 51, 68, 0.4)" stroke="#22d3ee" stroke-width="1.5"/>
+        <text x="300" y="209" fill="white" font-size="11" font-weight="600" text-anchor="middle">Registry</text>
+        <text x="300" y="225" fill="#94a3b8" font-size="9" text-anchor="middle">~/.harness/plugins/</text>
+
+        <!-- Pipeline Orchestrator -->
+        <rect x="410" y="188" width="180" height="50" rx="6" fill="rgba(8, 51, 68, 0.4)" stroke="#22d3ee" stroke-width="1.5"/>
+        <text x="500" y="209" fill="white" font-size="11" font-weight="600" text-anchor="middle">Orchestrator</text>
+        <text x="500" y="225" fill="#94a3b8" font-size="9" text-anchor="middle">DAG TopoSort</text>
+
+        <!-- Secrets -->
+        <rect x="210" y="250" width="180" height="50" rx="6" fill="rgba(8, 51, 68, 0.4)" stroke="#22d3ee" stroke-width="1.5"/>
+        <text x="300" y="271" fill="white" font-size="11" font-weight="600" text-anchor="middle">Secrets Manager</text>
+        <text x="300" y="287" fill="#94a3b8" font-size="9" text-anchor="middle">ctx.secrets</text>
+
+        <!-- Sandbox -->
+        <rect x="410" y="250" width="180" height="50" rx="6" fill="rgba(8, 51, 68, 0.4)" stroke="#22d3ee" stroke-width="1.5"/>
+        <text x="500" y="271" fill="white" font-size="11" font-weight="600" text-anchor="middle">Sandbox</text>
+        <text x="500" y="287" fill="#94a3b8" font-size="9" text-anchor="middle">Permissions + Audit</text>
+
+        <!-- Core connections -->
+        <line x1="390" y1="151" x2="408" y2="151" stroke="#22d3ee" stroke-width="1" marker-end="url(#arrow-cyan)"/>
+        <line x1="300" y1="176" x2="300" y2="186" stroke="#22d3ee" stroke-width="1" marker-end="url(#arrow-cyan)"/>
+        <line x1="500" y1="176" x2="500" y2="186" stroke="#22d3ee" stroke-width="1" marker-end="url(#arrow-cyan)"/>
+
+        <!-- ================================================================
+             PLUGIN PROTOCOL (Middle-Left)
+             ================================================================ -->
+        <line x1="300" y1="316" x2="300" y2="346" stroke="#34d399" stroke-width="2" marker-end="url(#arrow-green)"/>
+        <line x1="500" y1="316" x2="500" y2="346" stroke="#34d399" stroke-width="2" marker-end="url(#arrow-green)"/>
+
+        <rect x="180" y="346" width="520" height="64" rx="6" fill="rgba(6, 78, 59, 0.15)" stroke="#34d399" stroke-width="1.5" stroke-dasharray="6,3"/>
+        <text x="192" y="362" fill="#34d399" font-size="10" font-weight="600">🔌 HarnessPlugin Protocol</text>
+        <text x="192" y="378" fill="#94a3b8" font-size="8">meta / commands / onActivate / onDeactivate / healthCheck / auth / audit</text>
+        <text x="192" y="394" fill="#94a3b8" font-size="8">args[] → { name, type, validate } / output → JSONSchema / retry → { attempts, backoff }</text>
+
+        <!-- ================================================================
+             PLUGIN ECOSYSTEM (Middle)
+             ================================================================ -->
+        <line x1="300" y1="410" x2="300" y2="440" stroke="#a78bfa" stroke-width="2" marker-end="url(#arrow-violet)"/>
+
+        <rect x="180" y="440" width="520" height="120" rx="12" fill="rgba(76, 29, 149, 0.08)" stroke="#a78bfa" stroke-width="2" stroke-dasharray="8,4"/>
+        <text x="192" y="458" fill="#a78bfa" font-size="10" font-weight="600">📦 Plugin Ecosystem · 业务插件层</text>
+
+        <rect x="200" y="470" width="110" height="40" rx="6" fill="rgba(76, 29, 149, 0.4)" stroke="#a78bfa" stroke-width="1.5"/>
+        <text x="255" y="487" fill="white" font-size="10" font-weight="600" text-anchor="middle">@team/deploy</text>
+        <text x="255" y="501" fill="#94a3b8" font-size="8" text-anchor="middle">发布系统</text>
+
+        <rect x="320" y="470" width="110" height="40" rx="6" fill="rgba(76, 29, 149, 0.4)" stroke="#a78bfa" stroke-width="1.5"/>
+        <text x="375" y="487" fill="white" font-size="10" font-weight="600" text-anchor="middle">@team/monitor</text>
+        <text x="375" y="501" fill="#94a3b8" font-size="8" text-anchor="middle">监控告警</text>
+
+        <rect x="440" y="470" width="110" height="40" rx="6" fill="rgba(76, 29, 149, 0.4)" stroke="#a78bfa" stroke-width="1.5"/>
+        <text x="495" y="487" fill="white" font-size="10" font-weight="600" text-anchor="middle">@team/config</text>
+        <text x="495" y="501" fill="#94a3b8" font-size="8" text-anchor="middle">配置中心</text>
+
+        <rect x="560" y="470" width="120" height="40" rx="6" fill="rgba(76, 29, 149, 0.4)" stroke="#a78bfa" stroke-width="1.5"/>
+        <text x="620" y="487" fill="white" font-size="10" font-weight="600" text-anchor="middle">@team/ticket</text>
+        <text x="620" y="501" fill="#94a3b8" font-size="8" text-anchor="middle">工单系统</text>
+
+        <rect x="200" y="516" width="110" height="36" rx="6" fill="rgba(76, 29, 149, 0.4)" stroke="#a78bfa" stroke-width="1.5"/>
+        <text x="255" y="531" fill="white" font-size="10" font-weight="600" text-anchor="middle">@team/log</text>
+        <text x="255" y="545" fill="#94a3b8" font-size="8" text-anchor="middle">日志平台</text>
+
+        <rect x="320" y="516" width="110" height="36" rx="6" fill="rgba(76, 29, 149, 0.4)" stroke="#a78bfa" stroke-width="1.5"/>
+        <text x="375" y="531" fill="white" font-size="10" font-weight="600" text-anchor="middle">@team/acl</text>
+        <text x="375" y="545" fill="#94a3b8" font-size="8" text-anchor="middle">权限系统</text>
+
+        <rect x="440" y="516" width="110" height="36" rx="6" fill="rgba(76, 29, 149, 0.4)" stroke="#a78bfa" stroke-width="1.5"/>
+        <text x="495" y="531" fill="white" font-size="10" font-weight="600" text-anchor="middle">@team/im</text>
+        <text x="495" y="545" fill="#94a3b8" font-size="8" text-anchor="middle">IM 通知</text>
+
+        <rect x="560" y="516" width="120" height="36" rx="6" fill="rgba(76, 29, 149, 0.4)" stroke="#a78bfa" stroke-width="1.5"/>
+        <text x="620" y="531" fill="white" font-size="10" font-weight="600" text-anchor="middle">... more</text>
+        <text x="620" y="545" fill="#94a3b8" font-size="8" text-anchor="middle">任意 npm 包</text>
+
+        <!-- ================================================================
+             ENTERPRISE SYSTEMS (Bottom-Left)
+             ================================================================ -->
+        <line x1="255" y1="560" x2="255" y2="596" stroke="#fbbf24" stroke-width="1.5" marker-end="url(#arrow-amber)"/>
+        <line x1="375" y1="560" x2="375" y2="596" stroke="#fbbf24" stroke-width="1.5" marker-end="url(#arrow-amber)"/>
+        <line x1="495" y1="560" x2="495" y2="596" stroke="#fbbf24" stroke-width="1.5" marker-end="url(#arrow-amber)"/>
+        <line x1="620" y1="560" x2="620" y2="596" stroke="#fbbf24" stroke-width="1.5" marker-end="url(#arrow-amber)"/>
+
+        <rect x="180" y="596" width="520" height="72" rx="12" fill="rgba(251, 191, 36, 0.05)" stroke="#fbbf24" stroke-width="1.5" stroke-dasharray="8,4"/>
+        <text x="192" y="614" fill="#fbbf24" font-size="10" font-weight="600">🏭 Enterprise Systems · 企业基础设施</text>
+
+        <rect x="200" y="624" width="100" height="35" rx="4" fill="rgba(120, 53, 15, 0.3)" stroke="#fbbf24" stroke-width="1"/>
+        <text x="250" y="646" fill="white" font-size="9" font-weight="600" text-anchor="middle">Jenkins / CI</text>
+
+        <rect x="310" y="624" width="100" height="35" rx="4" fill="rgba(120, 53, 15, 0.3)" stroke="#fbbf24" stroke-width="1"/>
+        <text x="360" y="646" fill="white" font-size="9" font-weight="600" text-anchor="middle">Prometheus</text>
+
+        <rect x="420" y="624" width="100" height="35" rx="4" fill="rgba(120, 53, 15, 0.3)" stroke="#fbbf24" stroke-width="1"/>
+        <text x="470" y="646" fill="white" font-size="9" font-weight="600" text-anchor="middle">Apollo/Nacos</text>
+
+        <rect x="530" y="624" width="100" height="35" rx="4" fill="rgba(120, 53, 15, 0.3)" stroke="#fbbf24" stroke-width="1"/>
+        <text x="580" y="646" fill="white" font-size="9" font-weight="600" text-anchor="middle">ELK / Loki</text>
+
+        <!-- ================================================================
+             AI NATIVE LAYER (Right side)
+             ================================================================ -->
+        <rect x="780" y="96" width="380" height="240" rx="12" fill="rgba(136, 19, 55, 0.08)" stroke="#fb7185" stroke-width="2" stroke-dasharray="8,4"/>
+        <text x="792" y="115" fill="#fb7185" font-size="10" font-weight="600">🤖 AI Native Layer</text>
+
+        <rect x="800" y="130" width="180" height="48" rx="6" fill="rgba(136, 19, 55, 0.4)" stroke="#fb7185" stroke-width="1.5"/>
+        <text x="890" y="150" fill="white" font-size="10" font-weight="600" text-anchor="middle">🧠 AI Plugin Generator</text>
+        <text x="890" y="166" fill="#94a3b8" font-size="8" text-anchor="middle">harness create --ai</text>
+
+        <rect x="800" y="186" width="180" height="48" rx="6" fill="rgba(136, 19, 55, 0.4)" stroke="#fb7185" stroke-width="1.5"/>
+        <text x="890" y="206" fill="white" font-size="10" font-weight="600" text-anchor="middle">💬 Natural Language</text>
+        <text x="890" y="222" fill="#94a3b8" font-size="8" text-anchor="middle">harness ask "..."</text>
+
+        <rect x="800" y="242" width="180" height="48" rx="6" fill="rgba(136, 19, 55, 0.4)" stroke="#fb7185" stroke-width="1.5"/>
+        <text x="890" y="262" fill="white" font-size="10" font-weight="600" text-anchor="middle">🔄 Self-Healing</text>
+        <text x="890" y="278" fill="#94a3b8" font-size="8" text-anchor="middle">AI Auto Retry + Fix</text>
+
+        <!-- MCP Server -->
+        <line x1="780" y1="186" x2="702" y2="186" stroke="#fb7185" stroke-width="1.5" stroke-dasharray="5,5"/>
+        <rect x="1000" y="130" width="140" height="80" rx="6" fill="rgba(136, 19, 55, 0.4)" stroke="#fb7185" stroke-width="1.5"/>
+        <text x="1070" y="155" fill="white" font-size="11" font-weight="600" text-anchor="middle">MCP Server</text>
+        <text x="1070" y="173" fill="#94a3b8" font-size="9" text-anchor="middle">harness serve</text>
+        <text x="1070" y="189" fill="#94a3b8" font-size="8" text-anchor="middle">Claude/Cursor/Windsurf</text>
+        <text x="1070" y="201" fill="#fb7185" font-size="7" text-anchor="middle">tools → MCP tools</text>
+
+        <!-- Connections from core to AI -->
+        <line x1="700" y1="151" x2="798" y2="154" stroke="#fb7185" stroke-width="1.5" stroke-dasharray="5,5" marker-end="url(#arrow-rose)"/>
+        <text x="755" y="146" fill="#fb7185" font-size="8" text-anchor="middle">expose</text>
+
+        <!-- ================================================================
+             EXPOSURE LAYER (Right-Bottom)
+             ================================================================ -->
+        <rect x="780" y="370" width="380" height="96" rx="12" fill="rgba(6, 78, 59, 0.08)" stroke="#34d399" stroke-width="1.5" stroke-dasharray="6,3"/>
+        <text x="792" y="388" fill="#34d399" font-size="10" font-weight="600">🌐 Exposure Layer · 对外能力</text>
+
+        <rect x="800" y="400" width="160" height="50" rx="6" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1.5"/>
+        <text x="880" y="420" fill="white" font-size="10" font-weight="600" text-anchor="middle">OpenAPI / REST</text>
+        <text x="880" y="438" fill="#94a3b8" font-size="8" text-anchor="middle">commands → REST API</text>
+
+        <rect x="980" y="400" width="160" height="50" rx="6" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1.5"/>
+        <text x="1060" y="420" fill="white" font-size="10" font-weight="600" text-anchor="middle">Function Calling</text>
+        <text x="1060" y="438" fill="#94a3b8" font-size="8" text-anchor="middle">LLM → Plugin</text>
+
+        <line x1="700" y1="420" x2="798" y2="425" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrow-green)"/>
+
+        <!-- ================================================================
+             FRONTEND COMPETITIVE (Left-Bottom)
+             ================================================================ -->
+        <rect x="180" y="700" width="520" height="80" rx="12" fill="rgba(8, 51, 68, 0.08)" stroke="#22d3ee" stroke-width="1.5" stroke-dasharray="6,3"/>
+        <text x="192" y="718" fill="#22d3ee" font-size="10" font-weight="600">🎨 大前端竞争力 · Frontend Ops</text>
+
+        <rect x="200" y="730" width="115" height="38" rx="6" fill="rgba(8, 51, 68, 0.4)" stroke="#22d3ee" stroke-width="1.5"/>
+        <text x="257" y="746" fill="white" font-size="9" font-weight="600" text-anchor="middle">Design→Code</text>
+        <text x="257" y="760" fill="#94a3b8" font-size="7" text-anchor="middle">Figma→Component</text>
+
+        <rect x="325" y="730" width="115" height="38" rx="6" fill="rgba(8, 51, 68, 0.4)" stroke="#22d3ee" stroke-width="1.5"/>
+        <text x="382" y="746" fill="white" font-size="9" font-weight="600" text-anchor="middle">Perf Audit</text>
+        <text x="382" y="760" fill="#94a3b8" font-size="7" text-anchor="middle">Lighthouse CI</text>
+
+        <rect x="450" y="730" width="115" height="38" rx="6" fill="rgba(8, 51, 68, 0.4)" stroke="#22d3ee" stroke-width="1.5"/>
+        <text x="507" y="746" fill="white" font-size="9" font-weight="600" text-anchor="middle">Visual Diff</text>
+        <text x="507" y="760" fill="#94a3b8" font-size="7" text-anchor="middle">Pixelmatch</text>
+
+        <rect x="575" y="730" width="105" height="38" rx="6" fill="rgba(8, 51, 68, 0.4)" stroke="#22d3ee" stroke-width="1.5"/>
+        <text x="627" y="746" fill="white" font-size="9" font-weight="600" text-anchor="middle">AI Review</text>
+        <text x="627" y="760" fill="#94a3b8" font-size="7" text-anchor="middle">PR Review</text>
+
+        <line x1="440" y1="700" x2="440" y2="698" stroke="#22d3ee" stroke-width="1.5"/>
+
+        <!-- ================================================================
+             LEGEND
+             ================================================================ -->
+        <text x="820" y="500" fill="white" font-size="10" font-weight="600">Legend</text>
+        <rect x="800" y="512" width="16" height="10" rx="2" fill="rgba(8, 51, 68, 0.4)" stroke="#22d3ee" stroke-width="1"/>
+        <text x="822" y="520" fill="#94a3b8" font-size="8">CLI Core</text>
+        <rect x="800" y="528" width="16" height="10" rx="2" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1"/>
+        <text x="822" y="536" fill="#94a3b8" font-size="8">Protocol / API</text>
+        <rect x="800" y="544" width="16" height="10" rx="2" fill="rgba(76, 29, 149, 0.4)" stroke="#a78bfa" stroke-width="1"/>
+        <text x="822" y="552" fill="#94a3b8" font-size="8">Plugin Layer</text>
+        <rect x="800" y="560" width="16" height="10" rx="2" fill="rgba(120, 53, 15, 0.3)" stroke="#fbbf24" stroke-width="1"/>
+        <text x="822" y="568" fill="#94a3b8" font-size="8">Enterprise Sys</text>
+        <rect x="800" y="576" width="16" height="10" rx="2" fill="rgba(136, 19, 55, 0.4)" stroke="#fb7185" stroke-width="1"/>
+        <text x="822" y="584" fill="#94a3b8" font-size="8">AI Native</text>
+        <line x1="800" y1="596" x2="816" y2="596" stroke="#fb7185" stroke-width="1" stroke-dasharray="3,3"/>
+        <text x="822" y="600" fill="#94a3b8" font-size="8">AI Flow</text>
+
+        <!-- ================================================================
+             PIPELINE FLOW INDICATOR (Bottom)
+             ================================================================ -->
+        <rect x="780" y="620" width="380" height="60" rx="8" fill="rgba(15, 23, 42, 0.8)" stroke="#34d399" stroke-width="1"/>
+        <text x="970" y="642" fill="#34d399" font-size="10" font-weight="600" text-anchor="middle">⚡ Pipeline Workflow</text>
+        <text x="970" y="658" fill="#94a3b8" font-size="9" text-anchor="middle">silence-alert → rollback → health-check → notify</text>
+        <text x="970" y="672" fill="#64748b" font-size="8" text-anchor="middle">5 systems · 1 command · harness pipeline rollback.yaml</text>
+      </svg>
+    </div>
+
+    <div class="cards">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-dot cyan"></div>
+          <h3>CLI Base · 基座</h3>
+        </div>
+        <ul>
+          <li>• Commander.js CLI 入口</li>
+          <li>• dynamic import() 插件引擎</li>
+          <li>• JSON Registry 插件注册表</li>
+          <li>• DAG 拓扑排序 Pipeline</li>
+          <li>• Secrets + Sandbox 安全层</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-dot violet"></div>
+          <h3>Plugin Ecosystem · 业务插件</h3>
+        </div>
+        <ul>
+          <li>• @team/deploy — 发布/回滚/灰度</li>
+          <li>• @team/monitor — 告警/静默/查询</li>
+          <li>• @team/config — 配置下发/灰度</li>
+          <li>• @team/ticket — 工单/审批流程</li>
+          <li>• @team/log — 日志查询/聚合</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-dot rose"></div>
+          <h3>AI Native · AI 原生</h3>
+        </div>
+        <ul>
+          <li>• harness create --ai 自动生成插件</li>
+          <li>• harness ask "..." 自然语言编排</li>
+          <li>• Self-Healing + Auto Retry</li>
+          <li>• MCP Server 暴露所有 tools</li>
+          <li>• Function Calling → LLM 调用插件</li>
+        </ul>
+      </div>
+    </div>
+
+    <p class="footer">
+      Harness Agent · Enterprise CLI Platform · Architecture v1.0
+    </p>
+  </div>
+</body>
+</html>
