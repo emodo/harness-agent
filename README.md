@@ -168,6 +168,36 @@ harness-agent/
 
 Zero build step for plugins. Just `npm pack` and `npm publish`.
 
+## 下一步规划
+
+按优先级排列，v0.2 → v1.0 路线图：
+
+### 🔥 v0.2 — 生态闭环
+
+| 功能 | 说明 |
+|------|------|
+| **`harness create <name>`** | 一键生成标准插件脚手架（package.json / tsconfig / src / SKILL.md），AI 生成代码后零门槛接入 |
+| **`harness serve`** | 启动 MCP Server，所有已安装插件的 commands 自动暴露为 MCP tools，一次编写、Claude/Cursor/Hermes 通用 |
+| **`harness search <keyword>`** | 搜索 npm 上的 `harness-plugin-*` 包，查看下载量、版本、命令列表 |
+
+### ⚡ v0.3 — 完整体验
+
+| 功能 | 说明 |
+|------|------|
+| **Pipeline 实时流式输出** | 长任务边跑边出，不再等插件跑完才显示结果 |
+| **`harness update [name]`** | 检查 npm 新版本并升级，`--outdated` 标记过期插件 |
+| **YAML 工作流** | Pipeline 支持 YAML 格式，比 JSON 更可读 |
+| **`ctx.secrets` 密钥管理** | `harness config set KEY val`，注入所有插件上下文 |
+| **沙箱模式** | `--sandbox` 可选文件系统/网络权限隔离 |
+
+### 💡 v1.0 — 平台化
+
+| 功能 | 说明 |
+|------|------|
+| **Watch 模式** | `harness pipeline --watch` 文件改动自动重跑 |
+| **Pipeline 模板** | `harness pipeline --init` 生成 CI / 部署等常见工作流 |
+| **结构化返回值** | 插件 command 可返回类型化数据，pipeline 下一步直接消费 |
+
 ## Requirements
 
 - Node.js >= 18
